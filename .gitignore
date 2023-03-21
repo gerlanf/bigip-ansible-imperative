@@ -9,6 +9,8 @@
 *.rpm
 */secrets.yml
 .env
+*.pdf
+*.pptx
 
 vault/*
 logs/*
