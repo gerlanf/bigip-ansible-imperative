@@ -1,0 +1,20 @@
+{
+    "ansible.executionEnvironment.enabled": false,
+    "ansible.ansible.path": "/usr/bin/ansible",
+    "ansible.ansible.useFullyQualifiedCollectionNames": false,
+    "ansible.ansibleLint.path": "a/usr/local/Cellar/ansible-lint/6.9.0/bin/ansible-lint",
+    "ansibleServer.trace.server": "verbose",
+    "ansible.ansibleLint.enabled": true,
+    "projectManager.git.baseFolders": [
+        "/Users/d.brown/Projects/Ansible/ansible-f5/"
+    ],
+    "githubPullRequests.remotes": [
+        "origin",
+        "upstream",
+        "main",
+        "master"
+    ],
+    "ansible.executionEnvironment.image": "",
+    "ansible.validation.lint.path": "/usr/local/Cellar/ansible-lint/6.9.0/bin/ansible-lint",
+    "ansible.python.interpreterPath": "/usr/local/bin/python3.11",
+}

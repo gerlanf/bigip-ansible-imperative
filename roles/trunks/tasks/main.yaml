@@ -1,0 +1,9 @@
+- name: Create Trunk Interfaces
+  bigip_trunk:
+    provider: "{{ provider }}"
+    name: "{{ item.name }}"
+    interfaces: "{{ item.interfaces }}"
+    lacp_enabled: "{{ item.lacp_enabled | default(omit) }}"
+    lacp_mode: "{{ item.lacp_mode | default(omit) }}"
+  with_items: "{{ trunks }}"
+  delegate_to: localhost

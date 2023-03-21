@@ -1,0 +1,7 @@
+- name: Create VLANs
+  bigip_vlan:
+    provider: "{{ provider }}"
+    name: "{{ item.name }}"
+    tag: "{{ item.tag }}"
+    untagged_interfaces: "{{ item.untagged_interfaces }}"
+  with_items: "{{ vlans }}"

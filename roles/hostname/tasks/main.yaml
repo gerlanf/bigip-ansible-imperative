@@ -1,0 +1,5 @@
+- name: Configure Hostname
+  bigip_hostname:
+    provider: "{{ provider }}"
+    hostname: "{{ inventory_hostname }}.{{ domain }}"
+  delegate_to: localhost

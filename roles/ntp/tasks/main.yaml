@@ -1,0 +1,6 @@
+- name: Configure NTP Servers
+  bigip_device_ntp:
+    provider: "{{ provider }}"
+    ntp_servers: "{{ ntp_servers }}"
+    timezone: UTC
+    state: present

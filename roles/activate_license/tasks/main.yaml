@@ -1,0 +1,87 @@
+- name: Get Authentication Token
+  uri:
+    url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ provider['user'] }}"
+      password: "{{ provider['password'] }}"
+      loginProviderName: tmos
+    status_code: 200
+    validate_certs: false
+  register: auth_response
+  delegate_to: localhost
+
+- set_fact:
+    auth_token: "{{ auth_response.json.token.token }}"
+
+- name: Gather License Information
+  uri:
+    url: "https://{{ ansible_host }}/mgmt/tm/sys/license"
+    headers:
+      X-F5-Auth-Token: "{{ auth_response.json.token.token }}"
+    method: GET
+    status_code: 200
+    validate_certs: false
+    return_content: yes
+  register: license_response
+  delegate_to: localhost
+
+- set_fact:
+    service_date: "{{ license_response['json']['entries']['https://localhost/mgmt/tm/sys/license/0']['nestedStats']['entries']['serviceCheckDate']['description'] | replace('/','-')}}"
+    registration_key: "{{ license_response['json']['entries']['https://localhost/mgmt/tm/sys/license/0']['nestedStats']['entries']['registrationKey']['description'] }}"
+
+- set_fact:
+    relicense_command_proxy: "/usr/local/bin/SOAPLicenseClient --proxy 192.189.187.100:3128 --basekey {{ registration_key }}"
+    relicense_command: "/usr/local/bin/SOAPLicenseClient --basekey {{ registration_key }}"
+
+- name: Try to Activate License
+  block:
+    - name: Reactivate License Via Proxy
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/tm/util/bash"
+        headers:
+          X-F5-Auth-Token: "{{ auth_token }}"
+        body_format: json
+        method: POST
+        body:
+          command: "run"
+          utilCmdArgs: " -c '{{ relicense_command_proxy }}'"
+        status_code: 200
+        validate_certs: false
+        return_content: yes
+      delegate_to: localhost
+      register: reactivate_result
+      failed_when: "'New license installed' not in reactivate_result.json.commandResult"
+
+  rescue:
+    - name: Reactivate License Via Internet
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/tm/util/bash"
+        headers:
+          X-F5-Auth-Token: "{{ auth_token }}"
+        body_format: json
+        method: POST
+        body:
+          command: "run"
+          utilCmdArgs: " -c '{{ relicense_command }}'"
+        status_code: 200
+        validate_certs: false
+        return_content: yes
+      delegate_to: localhost
+      register: reactivate_result
+      failed_when: "'New license installed' not in reactivate_result.json.commandResult"
+      ignore_errors: true
+
+    - pause:
+        prompt: "License Activation Failed! Pausing for up to 30 minutes for manual activation"
+        minutes: 30
+      when: reactivate_result.failed
+
+- name: Wait for Reactivation To Finish
+  pause:
+    seconds: 60
+
+- name: Wait for Reactivation To Finish
+  pause:
+    seconds: 60

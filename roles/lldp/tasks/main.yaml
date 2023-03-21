@@ -1,0 +1,6 @@
+- name: Enable LLDP Globally
+  f5networks.f5_modules.bigip_network_globals:
+    provider: "{{ provider }}"
+    lldp:
+      enabled: yes
+  delegate_to: localhost

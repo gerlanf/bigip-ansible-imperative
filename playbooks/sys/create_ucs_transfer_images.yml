@@ -1,0 +1,203 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  hosts: all
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Get REST Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      # no_log: true
+      register: auth_response
+      delegate_to: localhost
+
+    - set_fact:
+        auth_token: "{{ auth_response.json.token.token }}"
+        delete_images: "{{ delete_images | default(omit) }}"
+
+- name: Setup Ansible Controller
+  gather_facts: false
+  hosts: all
+  collections:
+    - f5networks.f5_modules
+  tasks:
+    - stat:
+        path: images/BIGIP-15.1.5.1-0.0.14.iso
+      register: image_stat
+      run_once: true
+      delegate_to: localhost
+
+    - stat:
+        path: images/Hotfix-BIGIP-15.1.5.1.0.42.14-ENG.iso
+      register: ehf_stat
+      run_once: true
+      delegate_to: localhost
+      when: hotfix_filename is defined
+
+- name: Collect Facts About Each BIG-IP
+  gather_facts: false
+  hosts: all
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Collect Facts
+      f5networks.f5_modules.bigip_device_info:
+        gather_subset:
+          - software-volumes
+          - software-hotfixes
+          - software-images
+          - devices
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      register: bigip_facts
+
+    - name: Collect License Information
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/tm/sys/license/"
+        headers:
+          X-F5-Auth-Token: "{{ auth_token }}"
+        method: GET
+        status_code: 200
+        validate_certs: false
+        return_content: true
+      register: license_response
+      delegate_to: localhost
+
+    - name: Collect Config Sync Status
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/tm/cm/sync-status/"
+        headers:
+          X-F5-Auth-Token: "{{ auth_token }}"
+        method: GET
+        status_code: 200
+        validate_certs: false
+        return_content: true
+      register: sync_response
+      delegate_to: localhost
+
+   # parse deeply nested json
+    - set_fact:
+        service_date: "{{ license_response['json']['entries']['https://localhost/mgmt/tm/sys/license/0']['nestedStats']['entries']['serviceCheckDate']['description'] | replace('/','-')}}"
+        registration_key: "{{ license_response['json']['entries']['https://localhost/mgmt/tm/sys/license/0']['nestedStats']['entries']['registrationKey']['description'] }}"
+        sync_status: "{{ sync_response['json']['entries']['https://localhost/mgmt/tm/cm/sync-status/0']['nestedStats']['entries']['status']['description'] }}"
+        ucs_filename: "{{ inventory_hostname }}-{{ lookup('pipe','date +%Y-%m-%d-%H-%M-%S') }}.ucs"
+        active_version: "{{ bigip_facts | json_query('software_volumes[?active==`yes`].version') | join('') }}"
+        active_volume: "{{ bigip_facts | json_query('software_volumes[?active==`yes`].name') | join('') }}"
+        failover_status: "{{ bigip_facts | json_query('devices[?self==`yes`].failover_state') | join('') }}"
+        peer_hostname: "{{ bigip_facts | json_query('devices[?self==`no`].hostname') | join('') }}"
+
+    # prep the relicense command based on the registration key
+    # - set_fact:
+    #     relicense_command_proxy: "/usr/local/bin/SOAPLicenseClient --proxy 192.189.187.100:3128 --basekey {{ registration_key }}"
+    #     relicense_command: "/usr/local/bin/SOAPLicenseClient --basekey {{ registration_key }}"
+
+    - name: Print Collected Facts
+      debug:
+        msg:
+          - "Active Software Version: {{ active_version }}"
+          - "Active Volume: {{ active_volume }}"
+          - "Failover Status: {{ failover_status }}"
+          - "Service Check Date: {{ service_date }}"
+          - "Registration Key: {{ registration_key }}"
+          - "Config Sync Status: {{ sync_status }}"
+
+    - name: Pause for 3 Minutes to Review Collected Data
+      pause:
+        minutes: 3
+
+- name: Backup BIG-IP Configuration
+  gather_facts: false
+  hosts: all
+  tags: backup
+  collections:
+    - f5networks.f5_modules
+  tasks:
+    - name: Save Configuration
+      bigip_config:
+        save: yes
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      no_log: true
+
+    - name: Get current time on BIG-IP
+      command: date "+%H%M%S-%m%d%y"
+      register: date
+      no_log: true
+
+    - name: Generate UCS File on BIG-IP and Download to Local Controller
+      bigip_ucs_fetch:
+        provider: "{{ provider }}"
+        src: "{{ inventory_hostname + '-' + date.stdout +  '-backup.ucs' }}"
+        dest: "{{ 'backups/ucs/' + inventory_hostname + '-' + date.stdout +  '-backup.ucs' }}"
+      delegate_to: localhost
+      no_log: true
+
+    - name: Pause for 3 Minutes to Review Collected Data
+      pause:
+        minutes: 3
+
+- name: Transfer Base image
+  gather_facts: false
+  hosts: all
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Transfer Base Image to BIG-IP
+      bigip_software_image:
+        image: images/BIGIP-15.1.5.1-0.0.14.iso
+        provider: "{{ provider }}"
+      register: image_transfer
+      delegate_to: localhost
+
+    - name: Wait for image to become available
+      wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+    - name: Pause for 3 Minutes to Review Collected Data
+      pause:
+        minutes: 3
+
+- name: Transfer Hotfix
+  gather_facts: false
+  hosts: all
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Transfer Engineering Hotfix to BIG-IP
+      bigip_software_image:
+        image: images/Hotfix-BIGIP-15.1.5.1.0.42.14-ENG.iso
+        provider: "{{ provider }}"
+      register: ehf_transfer
+      delegate_to: localhost
+
+    - name: Wait for image to become available
+      wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+    - name: Pause for 3 Minutes to Review Collected Data
+      pause:
+        minutes: 3
+...

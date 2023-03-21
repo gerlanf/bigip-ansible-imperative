@@ -1,0 +1,31 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Update Interface Settings
+      bigip_interface:
+        name: "{{ item }}"
+        lldp_admin: txrx
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      loop:
+        - 1.2
+        - 1.3
+...

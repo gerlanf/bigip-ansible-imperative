@@ -1,0 +1,47 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  vars:
+    _dest_file: 'files/output-file.txt'
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: List MGMT Routes
+      bigip_command:
+        commands:
+          - list sys management-route
+        provider: "{{ provider }}"
+      register: result
+      delegate_to: localhost
+
+    - name: List MGMT routes
+      debug:
+        var: result.stdout_lines
+
+    - local_action: 
+        module: copy 
+        content: "{{ result.stdout_lines }}"
+        dest: reports/mgmt_routes.txt
+...

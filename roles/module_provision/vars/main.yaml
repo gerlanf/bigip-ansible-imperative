@@ -1,0 +1,5 @@
+module_provisioning:
+  - name: "ltm"
+    level: "nominal"
+  - name: "avr"
+    level: "minimum"

@@ -1,0 +1,20 @@
+collections:
+  - name: f5networks.f5_modules
+    version: 1.19.0
+    source: https://galaxy.ansible.com
+
+  - name: f5networks.f5_bigip
+    version: 1.9.0
+    source: https://galaxy.ansible.com
+
+  # - name: f5app_services_package
+  #   version: 1.21.0
+  #   source: https://galaxy.ansible.com
+
+  # - name: netbox.netbox
+  #   version: 3.7.1
+  #   source: https://galaxy.ansible.com
+
+  - name: community.general
+    version: 5.4.0
+    source: https://galaxy.ansible.com

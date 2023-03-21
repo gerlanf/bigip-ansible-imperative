@@ -1,0 +1,6 @@
+- name: Generate UCS File and Download to Local Controller
+  bigip_ucs_fetch:
+    provider: "{{ provider }}"
+    src: "{{ inventory_hostname }}.ucs"
+    dest: "backups/ucs/{{ inventory_hostname }}.ucs"
+  delegate_to: localhost

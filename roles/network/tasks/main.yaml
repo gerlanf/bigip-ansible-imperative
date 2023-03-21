@@ -1,0 +1,113 @@
+- name: Disable DHCP on MGMT Interface
+  bigip_sys_global:
+    mgmt_dhcp: no
+    provider: "{{ provider }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Management Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: default
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure WTC ISE Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: isewtc
+    network: "199.81.90.145/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure EDCW ISE Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: iseedcw
+    network: "204.135.108.147/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure WTC NTP Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: ntpwtc
+    network: "161.135.52.58/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure EDCW NTP Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: ntpedcw
+    network: "199.82.32.32/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure CTC NTP Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: ntpctc
+    network: "199.82.11.10/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Dublin NTP Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: ntpdubdc
+    network: "10.37.126.6/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Las Vegas NTP Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: ntplasdc
+    network: "10.231.35.11/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Traps 1 Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: traps1
+    network: "204.135.55.186/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Traps 2 Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: traps2
+    network: "161.135.165.75/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Syslog 1 Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: syslog1
+    network: "199.81.90.71/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost
+
+- name: Configure Syslog 2 Network Route
+  bigip_management_route:
+    provider: "{{ provider }}"
+    name: syslog2
+    network: "204.135.108.71/32"
+    gateway: "{{ mgmt_gateway }}"
+    state: present
+  delegate_to: localhost

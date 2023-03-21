@@ -1,0 +1,77 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      no_log: true
+
+    - name: Get REST Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      register: auth_response
+      delegate_to: localhost
+      no_log: true
+
+- name: Backup BIG-IP Configuration
+  gather_facts: false
+  vars_files: playbooks/vault/secrets.yml
+  hosts: bigip_ha
+  tags: backup
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Save Configuration
+      f5networks.f5_modules.bigip_config:
+        save: yes
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      no_log: true
+
+    - name: Get current time on BIG-IP
+      command: date "+%H%M%S-%m%d%y"
+      register: date
+      no_log: true
+
+    - name: Fetch a qkview from the remote device
+      f5networks.f5_modules.bigip_qkview:
+        asm_request_log: yes
+        exclude:
+          - audit
+          - secure
+        dest: "{{ 'qkview/' + inventory_hostname + '-' + date.stdout +  '.qkview' }}"
+        provider:
+          password: secret
+          server: lb.mydomain.com
+          user: admin
+        delegate_to: localhost
+...

@@ -1,0 +1,137 @@
+{
+  "applicationDescription": "{{ vars[app_name].tenant }} AS3 Application service",
+  "applicationName": "{{ vars[app_name].tenant }}",
+  "requiredNewApplication": true,
+  "appSvcsDeclaration": {
+    "class": "AS3",
+    "action": "deploy",
+    "persist": true,
+    "declaration": {
+      "class": "ADC",
+      "schemaVersion": "3.0.0",
+      "label": "{{ vars[app_name].tenant }} HTTPS application",
+      "target": {
+          "address": "{{ vars[app_name].bigip_target }}"
+      },
+      "{{vars[app_name].tenant}}": {
+        "class": "Tenant",
+        "{{vars[app_name].app_svc}}": {
+          "class": "Application",
+          "template": "https",
+          "serviceMain": {
+            "class": "Service_HTTPS",
+            "virtualAddresses": [
+              { "use": "serviceAddress" }
+            ],
+            "virtualPort": {{ vars[app_name].port }},
+            "pool": "{{vars[app_name].app_svc}}_web_pool",
+            {% if vars[app_name].waf_policy_url is defined %}
+            "policyWAF": {
+              "use": "{{vars[app_name].app_svc}}_waf_policy"
+            },
+            {% endif %}
+            {% if vars[app_name].access_profile is defined %}
+            "profileAccess": {
+              "bigip": "{{ vars[app_name].access_profile }}"
+            },
+            {% endif %}
+            {% if vars[app_name].irule_url is defined %}
+            "iRules": [ 
+              "{{vars[app_name].app_svc}}_irule" 
+            ],
+            {% endif %}
+            "profileAnalytics": {
+              "bigip": "/Common/analytics"
+            },
+            "profileAnalyticsTcp": {
+              "bigip": "/Common/tcp-analytics"
+            },
+            {% if vars[app_name].waf_policy_url is defined %}
+            "securityLogProfiles": [ 
+              {
+                "bigip": "/Common/secLogRemote"
+              },
+              {
+                "bigip": "/Common/Log illegal requests"
+              }
+            ],
+            {% endif %}
+            "serverTLS": "{{vars[app_name].app_svc}}_client_ssl",
+            "profileHTTP": {
+              "use": "http_profile_xff"
+            }
+          },
+          "serviceAddress":{
+            "class":"Service_Address",
+            "virtualAddress":"{{ vars[app_name].destination }}",
+            "arpEnabled":true,
+            "icmpEcho":"enable",
+            "routeAdvertisement":"enable",
+            "spanningEnabled":false,
+            "trafficGroup":"default"
+          },
+          "{{vars[app_name].app_svc}}_web_pool": {
+            "class": "Pool",
+            "loadBalancingMode": "predictive-node",
+            "monitors": [
+              "{{ vars[app_name].pool_monitor }}"
+            ],
+            "members": [
+              {% if vars[app_name].pool_fqdn is defined %}
+              {
+                "servicePort": {{ vars[app_name].members_port }},
+                "addressDiscovery": "fqdn",
+                "autoPopulate": true,
+                "queryInterval": 10,
+                "hostname": "{{ vars[app_name].pool_fqdn }}"
+              }
+              {% else %}
+              {% for node in vars[app_name].nodes -%}
+              {
+                "servicePort": {{node.port}},
+                "shareNodes": true,
+                "serverAddresses": [ "{{node.address}}" ]
+              }{% if not loop.last -%},
+              {% endif -%}
+              {% endfor %}
+              {% endif %}
+            ]
+          },
+          "{{vars[app_name].app_svc}}_client_ssl": {
+            "class": "TLS_Server",
+            "certificates": [
+              {
+                "certificate": "{{vars[app_name].app_svc}}_cert"
+              }
+            ]
+          },
+          "http_profile_xff": {
+            "class": "HTTP_Profile",
+            "xForwardedFor": true
+          },
+          "{{vars[app_name].app_svc}}_cert": {
+            "class": "Certificate",
+            "remark": "in practice we recommend using a passphrase",
+            "certificate": "{{vars[app_name].cert}}",
+            "privateKey": "{{vars[app_name].key}}"
+          },
+          {% if vars[app_name].waf_policy_url is defined %}
+          "{{vars[app_name].app_svc}}_waf_policy": {
+            "class": "WAF_Policy",
+            "url": "{{vars[app_name].waf_policy_url}}",
+            "ignoreChanges": true
+          },
+          {% endif %}
+          {% if vars[app_name].irule_url is defined %}
+          "{{vars[app_name].app_svc}}_irule": {
+            "class": "iRule",
+            "iRule": {
+              "url": "{{vars[app_name].irule_url}}"
+            }
+          }
+          {% endif %}
+        }
+      }
+    }
+  }
+}

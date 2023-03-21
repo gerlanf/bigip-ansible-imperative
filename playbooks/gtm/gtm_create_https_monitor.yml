@@ -1,0 +1,72 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: lab-vms
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Create a GTM HTTPS monitor1
+      bigip_gtm_monitor_https:
+        name: https_monitor1
+        ip: 2.1.1.1
+        port: 443
+        send: 'HEAD /actuator/health HTTP/1.1\r\nHost: fqdn.host.com\r\n\r\n'
+        receive: "HTTP/1.1 200"
+        interval: 30
+        timeout: 91
+        probe_timeout: 3
+        # ignore_down_response: true
+        state: present
+        provider: "{{ provider }}"
+      delegate_to: localhost
+
+    - name: Create a GTM HTTPS monitor2
+      bigip_gtm_monitor_https:
+        name: https_monitor2
+        ip: 2.1.1.2
+        port: 443
+        send: 'HEAD /actuator/health HTTP/1.1\r\nHost: fqdn.host.com\r\n\r\n'
+        receive: "HTTP/1.1 200"
+        interval: 30
+        timeout: 91
+        probe_timeout: 3
+        # ignore_down_response: true
+        state: present
+        provider: "{{ provider }}"
+      delegate_to: localhost
+
+    - name: Create a GTM HTTPS monitor3
+      bigip_gtm_monitor_https:
+        name: https_monitor3
+        ip: 2.1.1.3
+        port: 443
+        send: 'HEAD /actuator/health HTTP/1.1\r\nHost: fqdn.host.com\r\n\r\n'
+        receive: "HTTP/1.1 200"
+        interval: 30
+        timeout: 91
+        probe_timeout: 3
+        # ignore_down_response: true
+        state: present
+        provider: "{{ provider }}"
+      delegate_to: localhost
+...

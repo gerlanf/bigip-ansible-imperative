@@ -1,0 +1,39 @@
+- name: Change Default Admin Password
+  bigip_user:
+    provider: "{{ provider }}"
+    username_credential: admin
+    password_credential: "{{ admin_password }}"
+    state: present
+  no_log: true
+  delegate_to: localhost
+
+- name: Set Credentials to use New Admin Password
+  set_fact:
+    provider:
+      server: "{{ ansible_host }}"
+      user: admin
+      password: "{{ admin_password }}"
+      timeout: 200
+      validate_certs: false
+  no_log: true
+  delegate_to: localhost
+
+- name: Change Default Root Password
+  bigip_user:
+    provider: "{{ provider }}"
+    username_credential: root
+    password_credential: "{{ root_password }}"
+    state: present
+  no_log: true
+  delegate_to: localhost
+
+- name: Change To Admin Credentials
+  set_fact:
+    provider:
+      server: "{{ ansible_host }}"
+      user: admin
+      password: "{{ admin_password }}"
+      timeout: 200
+      validate_certs: false
+  no_log: true
+  delegate_to: localhost

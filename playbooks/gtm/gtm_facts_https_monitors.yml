@@ -1,0 +1,30 @@
+---
+- name: GRAB F5 FACTS
+  gather_facts: false
+  vars_files:
+    - group_vars/secrets.yml
+  hosts: all
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - set_fact:
+       provider:
+        server: "{{ ansible_host }}"
+        user: "{{ F5_USER }}"
+        password: "{{ F5_PASSWORD }}"
+        server_port: 443
+        validate_certs: false
+
+    - name: COLLECT BIG-IP DNS FACTS
+      f5networks.f5_modules.bigip_device_info:
+        gather_subset:
+         - https-monitors
+        provider: "{{provider}}"
+      register: bigip
+      tags: bigipfacts,assertfacts
+
+    - debug: var=bigip
+      tags: assertfacts
+...

@@ -1,0 +1,58 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - vgroup_vars/secrets.yml
+  hosts: bigip_ha
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Collect Facts
+      bigip_device_info:
+        gather_subset:
+          - management-routes
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      register: bigip_facts
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][0]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][1]['gateway']}}" 
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][2]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][3]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][4]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][5]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][6]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][7]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][8]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][9]['gateway']}}"
+
+    - debug: msg="{{inventory_hostname}} {{bigip_facts['management_routes'][10]['gateway']}}"
+
+...

@@ -1,0 +1,25 @@
+- name: Configure Syslog
+  bigip_device_syslog:
+    provider: "{{ provider }}"
+    auth_priv_from: emerg
+    cron_from: emerg
+    daemon_from: emerg
+    include: |
+      filter f_remote_loghost {
+          level (error..emerg);
+      };
+      destination d_remote_loghost {
+          udp("199.81.90.71" port(514));
+          udp("204.135.108.71" port(514));
+      };
+      log {
+          source(s_syslog_pipe);
+          filter(f_remote_loghost);
+          destination(d_remote_loghost);
+      };
+    kern_from: emerg
+    local6_from: emerg
+    mail_from: emerg
+    messages_from: emerg
+    messages_to: emerg
+    user_log_from: emerg

@@ -1,0 +1,10 @@
+- name: Create Self IP Addresses
+  bigip_selfip:
+    provider: "{{ provider }}"
+    name: "{{ self_ip_address }}"
+    address: "{{ self_ip_address }}"
+    netmask: 255.255.255.252
+    vlan: vlan1000
+    allow_service: all
+    traffic_group: "/Common/traffic-group-local-only"
+  delegate_to: localhost

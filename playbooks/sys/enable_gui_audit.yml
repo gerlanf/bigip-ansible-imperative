@@ -1,0 +1,29 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: all
+  connection: local
+
+  tasks:
+    - set_fact:
+       provider:
+        server: "{{ ansible_host }}"
+        user: "{{ F5_USER }}"
+        password: "{{ F5_PASSWORD }}"
+        server_port: 443
+        validate_certs: false
+
+    - name: Enable GUI Audit
+      bigip_command:
+        commands:
+          - modify sys global-settings gui-audit enabled
+        provider: "{{ provider }}"
+      register: result
+      delegate_to: localhost
+
+    - name: Display GUI Audit settings
+      debug:
+        var: result.stdout_lines
+...

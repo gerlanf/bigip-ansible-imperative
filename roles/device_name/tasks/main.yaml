@@ -1,0 +1,7 @@
+- name: Change Device Name
+  bigip_command:
+    provider: "{{ provider }}"
+    commands:
+      - "mv cm device bigip1 {{ inventory_hostname }}.{{ domain }}"
+    warn: no
+  delegate_to: localhost

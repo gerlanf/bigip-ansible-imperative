@@ -1,0 +1,49 @@
+- name: Remove Public SNMP Community
+  bigip_snmp_community:
+    provider: "{{ provider }}"
+    name: public
+    source: default
+    state: absent
+  no_log: true
+
+- name: Configure SNMP Contact and Location
+  bigip_snmp:
+    provider: "{{ provider }}"
+    contact: "Network Engineering"
+    location: "{{ snmp_location }}"
+    allowed_addresses:
+      - "0.0.0.0/0.0.0.0"
+
+- name: Create SNMP Read-Only Communities
+  bigip_snmp_community:
+    provider: "{{ provider }}"
+    name: "{{ item.name }}"
+    community: "{{ item.community }}"
+    version: v2c
+    source: all
+    access: ro
+    state: present
+  no_log: true
+  ignore_errors: true
+  with_items:
+    - name: SNMP1
+      community: "{{ datac_community }}"
+    - name: SNMP2
+      community: "{{ fedex_community }}"
+
+- name: Create SNMP Traps
+  bigip_snmp_trap:
+    provider: "{{ provider }}"
+    community: "{{ fedex_community }}"
+    name: "{{ item.name }}"
+    destination: "{{ item.destination }}"
+    network: management
+    port: "162"
+    snmp_version: 2c
+    state: present
+  no_log: true
+  with_items:
+    - name: "i204_135_55_186_1"
+      destination: 204.135.55.186
+    - name: "i161_135_165_75_1"
+      destination: 161.135.165.75

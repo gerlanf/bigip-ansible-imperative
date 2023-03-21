@@ -1,0 +1,62 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Get REST Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      no_log: true
+      register: auth_response
+      delegate_to: localhost
+
+#############################################################
+# to remove monitor change "state" parameter to "absent".   #
+#############################################################
+
+    - name: Remove a GTM HTTPS monitor
+      f5networks.f5_modules.bigip_gtm_monitor_https:
+        name: my_monitor
+        ip: 1.1.1.1
+        port: 443
+        send: 'HEAD /actuator/health HTTP/1.1\r\nHost: fqdn.host.com\r\n\r\n'
+        receive: "HTTP/1.1 200"
+        interval: 30
+        timeout: 91
+        probe_timeout: 3
+        ignore_down_response: true
+        state: absent
+        provider: "{{ provider }}"
+      delegate_to: localhost
+...

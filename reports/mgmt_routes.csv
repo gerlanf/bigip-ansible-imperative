@@ -1,0 +1,55 @@
+
+PLAY [Big-IP Info] *************************************************************
+
+TASK [set_fact] ****************************************************************
+ok: [bigip1-lab]
+ok: [bigip2-lab]
+ok: [bigip3-as3-lab]
+ok: [bigip4-as3-lab]
+
+TASK [Get MGMT Routes] *********************************************************
+ok: [bigip4-as3-lab -> localhost]
+ok: [bigip3-as3-lab -> localhost]
+ok: [bigip2-lab -> localhost]
+ok: [bigip1-lab -> localhost]
+
+TASK [Display MGMT Routes] *****************************************************
+ok: [bigip1-lab] => 
+  result.stdout_lines:
+  - - sys management-route default {
+    - '    description configured-statically'
+    - '    gateway 192.168.1.1'
+    - '    mtu 1500'
+    - '    network default'
+    - '}'
+ok: [bigip2-lab] => 
+  result.stdout_lines:
+  - - sys management-route default {
+    - '    description configured-statically'
+    - '    gateway 192.168.1.1'
+    - '    mtu 1500'
+    - '    network default'
+    - '}'
+ok: [bigip3-as3-lab] => 
+  result.stdout_lines:
+  - - sys management-route default {
+    - '    description configured-statically'
+    - '    gateway 192.168.1.1'
+    - '    mtu 1500'
+    - '    network default'
+    - '}'
+ok: [bigip4-as3-lab] => 
+  result.stdout_lines:
+  - - sys management-route default {
+    - '    description configured-statically'
+    - '    gateway 192.168.1.1'
+    - '    mtu 1500'
+    - '    network default'
+    - '}'
+
+PLAY RECAP *********************************************************************
+bigip1-lab                 : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+bigip2-lab                 : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+bigip3-as3-lab             : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+bigip4-as3-lab             : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

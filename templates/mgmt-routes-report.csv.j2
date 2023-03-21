@@ -1,0 +1,9 @@
+hostname,ip,management-route,gateway
+{% for device in groups['all'] %}
+{% set devinfo = hostvars[device] %}
+{% if devinfo['mgmt_route'] is defined and devinfo['mgmt_route'] | length>0 %}
+{{ devinfo['inventory_hostname'] }},{{ devinfo['ansible_host'] }},{{ devinfo['mgmt_route'] | join(' | ') }}
+{% else %}
+{{ devinfo['inventory_hostname'] }},{{ devinfo['ansible_host'] }},
+{% endif %}
+{% endfor %}

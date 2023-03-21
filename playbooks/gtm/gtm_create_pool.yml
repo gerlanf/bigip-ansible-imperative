@@ -1,0 +1,64 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Get REST Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      no_log: true
+      register: auth_response
+      delegate_to: localhost
+
+#############################################################
+
+    - name: Create a GTM pool
+      f5networks.f5_modules.bigip_gtm_pool:
+        name: pool1
+        type: a
+        load-balancing-mode: round-robin
+        alternate_lb_method: none
+        fallback_lb_method: drop-packet
+        provider: "{{ provider }}"
+      delegate_to: localhost
+
+    # - name: Create a GTM pool member
+    #   f5networks.f5_modules.bigip_gtm_pool_member:
+    #     pool: pool1
+    #     server_name: server1
+    #     virtual_server: vs1
+    #     type: a
+    #     provider: "{{ provider }}"
+    #   delegate_to: localhost
+...

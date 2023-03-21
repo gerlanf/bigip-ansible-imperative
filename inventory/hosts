@@ -1,0 +1,33 @@
+[all]
+bigip1-lab ansible_host=10.0.0.101
+bigip2-lab ansible_host=10.0.0.102
+bigip3-as3-lab ansible_host=10.0.0.103
+bigip4-as3-lab ansible_host=10.0.0.104
+bigip5-as3-lab ansible_host=10.0.0.105
+bigip6-as3-lab ansible_host=10.0.0.106
+bigip1-13-lab ansible_host=10.0.0.107
+bigip2-13-lab ansible_host=10.0.0.108
+
+[as3]
+bigip3-as3-lab
+bigip4-as3-lab
+
+[standalone]
+bigip5-as3-lab
+bigip6-as3-lab
+
+[bigip]
+bigip1-lab
+bigip2-lab
+bigip1-13-lab
+bigip2-13-lab
+
+[master]
+bigip1-lab
+bigip2-lab
+bigip3-as3-lab
+bigip4-as3-lab
+bigip5-as3-lab
+bigip6-as3-lab
+bigip1-13-lab
+bigip2-13-lab

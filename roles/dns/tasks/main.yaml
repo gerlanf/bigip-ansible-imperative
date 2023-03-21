@@ -1,0 +1,14 @@
+- name: Configure DNS Servers
+  bigip_device_dns:
+    provider: "{{ provider }}"
+    name_servers: "{{ dns_servers }}"
+    state: present
+
+- name: Pause
+  pause:
+    seconds: 5
+
+- name: Wait for BIP-IP Configuration to Reload
+  bigip_wait:
+    provider: "{{ provider }}"
+    timeout: 200

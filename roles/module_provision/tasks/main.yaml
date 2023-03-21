@@ -1,0 +1,12 @@
+- name: Provision BIG-IP Modules
+  bigip_provision:
+    provider: "{{ provider }}"
+    module: "{{ item.name }}"
+    level: "{{ item.level }}"
+    state: present
+  with_items: "{{ module_provisioning }}"
+
+- name: Wait for BIP-IP Configuration to Reload
+  bigip_wait:
+    provider: "{{ provider }}"
+    timeout: "200"

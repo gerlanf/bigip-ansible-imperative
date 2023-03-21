@@ -1,0 +1,40 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: all
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - block:
+        - name: Create node1
+          f5networks.f5_modules.bigip_node:
+              provider: "{{ provider }}"
+              host: "10.10.10.10"
+              name: "10.10.10.10"
+
+        - name: Create node2
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.11"
+            name: "10.10.10.11"
+
+        - name: Create node3
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.12"
+            name: "10.10.10.12"
+...

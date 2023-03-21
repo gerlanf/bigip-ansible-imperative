@@ -1,0 +1,97 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Get REST Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      no_log: true
+      register: auth_response
+      delegate_to: localhost
+
+    - name: Create server "GTM_Server1"
+      f5networks.f5_modules.bigip_gtm_server:
+        name: GTM_Server1
+        datacenter: /Common/Detroit
+        server_type: bigip
+        link_discovery: disabled
+        virtual_server_discovery: disabled
+        devices:
+          - name: server_1
+            address: 1.1.1.1
+          - name: server_2
+            address: 2.2.2.1
+            translation: 192.168.2.1
+          - name: server_2
+            address: 2.2.2.2
+          - name: server_3
+            addresses:
+              - address: 3.3.3.1
+              - address: 3.3.3.2
+          - name: server_4
+            addresses:
+              - address: 4.4.4.1
+                translation: 192.168.14.1
+              - address: 4.4.4.2
+        provider: "{{ provider }}"
+      delegate_to: localhost
+
+    - name: Create server "GTM_Server2"
+      f5networks.f5_modules.bigip_gtm_server:
+        name: GTM_Server2
+        datacenter: /Common/Memphis
+        server_type: bigip
+        link_discovery: disabled
+        virtual_server_discovery: disabled
+        devices:
+          - name: server_5
+            address: 5.5.5.1
+          - name: server_6
+            address: 6.6.6.1
+            translation: 192.168.6.1
+          - name: server_7
+            address: 5.5.5.2
+          - name: server_8
+            addresses:
+              - address: 7.7.7.1
+              - address: 7.7.7.2
+          - name: server_9
+            addresses:
+              - address: 5.4.4.1
+                translation: 192.168.8.1
+              - address: 6.4.4.2
+        provider: "{{ provider }}"
+      delegate_to: localhost
+...

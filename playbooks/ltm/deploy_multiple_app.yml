@@ -1,0 +1,139 @@
+---
+- name: F5 App Deploy
+  gather_facts: false
+  vars_files:
+    - group_vars/secrets.yml
+  hosts: all
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - set_fact:
+       provider:
+        server: "{{ ansible_host }}"
+        user: "{{ F5_USER }}"
+        password: "{{ F5_PASSWORD }}"
+        server_port: 443
+        validate_certs: False
+
+    - block:
+        - name: Create node1
+          f5networks.f5_modules.bigip_node:
+              provider: "{{ provider }}"
+              host: "10.10.10.10"
+              name: "10.10.10.10"
+
+        - name: Create node2
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.11"
+            name: "10.10.10.11"
+
+        - name: Create node3
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.12"
+            name: "10.10.10.12"
+
+        - name: Create node4
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.13"
+            name: "10.10.10.13"
+
+        - name: Create node5
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.14"
+            name: "10.10.10.14"
+
+        - name: Create node6
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.15"
+            name: "10.10.10.15"
+
+        - name: Create node7
+          f5networks.f5_modules.bigip_node:
+            provider: "{{ provider }}"
+            host: "10.10.10.16"
+            name: "10.10.10.16"
+
+        - name: Create pool 1
+          f5networks.f5_modules.bigip_pool:
+            provider: "{{ provider }}"
+            lb_method: "round-robin"
+            monitors: http
+            monitor_type: "and_list"
+            name: "pool1"
+
+        - name: Create pool 2
+          f5networks.f5_modules.bigip_pool:
+            provider: "{{ provider }}"
+            lb_method: "round-robin"
+            monitors: http
+            monitor_type: "and_list"
+            name: "pool2"
+
+        - name: Add nodes to pool 1
+          f5networks.f5_modules.bigip_pool_member:
+            provider: "{{ provider }}"
+            host: "{{ item.host }}"
+            name: "{{ item.host }}"
+            pool: "pool1"
+            port: "80"
+          loop:
+          - host: "10.10.10.10"
+          - host: "10.10.10.11"
+          - host: "10.10.10.12"
+
+        - name: Add nodes to pool 2
+          f5networks.f5_modules.bigip_pool_member:
+            provider: "{{ provider }}"
+            host: "{{ item.host }}"
+            name: "{{ item.host }}"
+            pool: "pool2"
+            port: "80"
+          loop:
+          - host: "10.10.10.13"
+          - host: "10.10.10.14"
+          - host: "10.10.10.15"
+          - host: "10.10.10.16"
+
+        - name: Create a virtual server 1
+          f5networks.f5_modules.bigip_virtual_server:
+            provider: "{{ provider }}"
+            name: "vip1"
+            destination: "172.31.10.11"
+            port: 443
+            enabled_vlans: "all"
+            snat: "Automap"
+            all_profiles:
+                - http
+                - clientssl
+                - oneconnect
+            pool: "pool1"
+          delegate_to: localhost
+
+        - name: Create a virtual server 2
+          f5networks.f5_modules.bigip_virtual_server:
+            provider: "{{ provider }}"
+            name: "vip2"
+            destination: "172.31.10.12"
+            port: 443
+            enabled_vlans: "all"
+            snat: "Automap"
+            all_profiles:
+                - http
+                - clientssl
+                - oneconnect
+            pool: "pool1"
+          delegate_to: localhost
+
+  handlers:
+    - name: Save the running configuration to disk
+      f5networks.f5_modules.bigip_config:
+        provider: "{{ provider }}"
+        save: yes
+...

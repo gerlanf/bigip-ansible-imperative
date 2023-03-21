@@ -1,0 +1,9 @@
+plugin: netbox
+api_endpoint: "https://netbox.npe.fedex.com"
+config_context: False
+
+query_filters:
+  - platform: f5-big-ip
+  - status: active
+device_query_filters:
+  - has_primary_ip: "true"

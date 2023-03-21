@@ -1,0 +1,4 @@
+- name: Disable the GUI Setup Utility
+  bigip_sys_global:
+    provider: "{{ provider }}"
+    gui_setup: false

@@ -1,0 +1,46 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Collect BIG-IP information
+      bigip_device_info:
+        gather_subset:
+          - interfaces
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      register: result
+
+    - name: Display VLAN Groups
+      debug:
+        var: result
+
+    # - name: Set Output for Interface Variable
+    #   set_fact:
+    #     f5_interfaces: "{{ interfaces }}"
+
+    # - name: Update Interface Settings
+    #   bigip_interface:
+    #     name: "{{ item }}"
+    #     lldp_admin: txrx
+    #     provider: "{{ provider }}"        
+    #   delegate_to: localhost
+    #   loop: 
+    #     - "{{ f5_interfaces }}"
+...

@@ -1,0 +1,33 @@
+- name: Set System Auth to TACACS+
+  bigip_device_auth:
+    provider: "{{ provider }}"
+    type: tacacs
+    authentication: use-all-servers
+    protocol_name: ip
+    secret: "{{ tacacs_secret }}"
+    servers: "{{ tacacs_servers }}"
+    service_name: ppp
+    state: present
+    use_for_auth: yes
+  delegate_to: localhost
+
+- name: Add Service Accounts for netdb, enat, and ncm
+  bigip_user:
+    provider: "{{ provider }}"
+    username_credential: "{{ item }}"
+    partition_access: all:admin
+    shell: bash
+    state: present
+  loop:
+    - ncm
+    - netdb
+    - enat
+  no_log: true
+  delegate_to: localhost
+
+- name: Add Administrator Remote-User with TMSH Access
+  bigip_command:
+    provider: "{{ provider }}"
+    commands: modify auth remote-user { default-role admin remote-console-access tmsh }
+    warn: no
+  delegate_to: localhost

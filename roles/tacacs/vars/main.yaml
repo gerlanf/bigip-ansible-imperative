@@ -1,0 +1,5 @@
+tacacs_servers:
+  - address: 199.81.90.145
+    port: 49
+  - address: 204.135.108.147
+    port: 49

@@ -1,0 +1,9 @@
+hostname,ip,vlan-group
+{% for device in groups['all'] %}
+{% set devinfo = hostvars[device] %}
+{% if devinfo['vlan_group'] is defined and devinfo['vlan_group'] | length>0 %}
+{{ devinfo['inventory_hostname'] }},{{ devinfo['ansible_host'] }},{{ devinfo['vlan_group'] | join(' | ') }}
+{% else %}
+{{ devinfo['inventory_hostname'] }},{{ devinfo['ansible_host'] }}, 
+{% endif %}
+{% endfor %}

@@ -1,0 +1,10 @@
+all:
+  hosts:
+    bigip1-lab:
+      ansible_host: 10.0.0.101
+    bigip1-13-lab:
+      ansible_host: 10.0.0.107
+  # vars:
+  #     image_filename: "BIGIP-15.1.5.1-0.0.14.iso"
+  #     hotfix_filename: "Hotfix-BIGIP-15.1.5.1.0.42.14-ENG.iso"
+  #     target_volume: "HD1.3"

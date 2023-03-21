@@ -1,0 +1,30 @@
+- name: Remove Public SNMP Community
+  bigip_snmp_community:
+    provider: "{{ provider }}"
+    name: public
+    source: default
+    state: absent
+  no_log: true
+
+- name: Configure SNMP Contact and Location
+  bigip_snmp:
+    provider: "{{ provider }}"
+    contact: Network Engineering
+    location: "{{ snmp_location }}"
+    allowed_addresses:
+      - 0.0.0.0/0.0.0.0
+
+- name: Create SNMP Read-Only Communities for Lab
+  bigip_snmp_community:
+    provider: "{{ provider }}"
+    name: "{{ item.name }}"
+    community: "{{ item.community }}"
+    oid: .1.3.6.1
+    version: v2c
+    source: 146.18.88.51
+    access: ro
+    state: present
+  no_log: true
+  with_items:
+    - name: NETAUTO-SNMP
+      community: "{{ fedex_community }}"

@@ -1,0 +1,71 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: bigip_ha
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Test Connection to BIG-IP
+      bigip_wait:
+        timeout: 60
+        provider: "{{ provider }}"
+      no_log: true
+      delegate_to: localhost
+
+    - name: Get REST Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      no_log: true
+      register: auth_response
+      delegate_to: localhost
+
+- name: GTM Sync Change
+  hosts: bigip_ha
+  gather_facts: false
+  connection: network_cli
+
+  tasks:
+    - name: Create snmp v2 trap
+      f5networks.f5_modules.bigip_snmp_trap:
+        community: N3TWK1776$
+        destination: 10.115.255.205
+        name: i10_115_255_205_1
+        network: management
+        port: 162
+        snmp_version: 2c
+        provider: "{{ provider }}"
+        validate_certs: false
+        server_port: 443
+      delegate_to: localhost
+
+    - name: Remove snmp v2 trap
+      f5networks.f5_modules.bigip_snmp_trap:
+        name: i10_115_255_105_1
+        state: absent
+        provider: "{{ provider }}"
+        validate_certs: false
+        server_port: 443
+      delegate_to: localhost
+...

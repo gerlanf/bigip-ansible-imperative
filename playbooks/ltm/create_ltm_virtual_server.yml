@@ -1,0 +1,36 @@
+---
+- name: Assertions and Setup Connections
+  gather_facts: false
+  vars_files: 
+    - group_vars/secrets.yml
+  hosts: all
+  connection: local
+  collections:
+    - f5networks.f5_modules
+
+  tasks:
+    - name: Set Connection Parameters
+      set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ F5_USER }}"
+          password: "{{ F5_PASSWORD }}"
+          validate_certs: false
+          timeout: 120
+      no_log: true
+
+    - name: Create a virtual server
+      f5networks.f5_modules.bigip_virtual_server:
+        provider: "{{ provider }}"
+        name: "vip1"
+        destination: "172.31.10.10"
+        port: 443
+        enabled_vlans: "all"
+        snat: "Automap"
+        all_profiles:
+            - http
+            - clientssl
+            - oneconnect
+        pool: "pool1"
+      delegate_to: localhost
+...

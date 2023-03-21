@@ -1,0 +1,78 @@
+---
+- name: Fetch Data
+  gather_facts: false
+  vars_files: playbooks/vault/secrets.yaml
+  connection: local
+  hosts: all
+  serial: 75
+  tasks:
+    - set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ service_account_user }}"
+          password: "{{ service_account_password }}"
+          timeout: 60
+          validate_certs: false
+      no_log: true
+
+    - name: Get Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ provider['user'] }}"
+          password: "{{ provider['password'] }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: false
+      register: auth_response
+      delegate_to: localhost
+
+    - set_fact:
+        auth_token: "{{ auth_response.json.token.token }}"
+
+    - name: Get VLAN Groups
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/tm/net/vlan-group/?$select=name"
+        headers:
+          X-F5-Auth-Token: "{{ auth_response.json.token.token }}"
+        method: GET
+        status_code: 200
+        validate_certs: false
+        return_content: yes
+      register: vlan_group_response
+      delegate_to: localhost
+
+    - set_fact:
+        vlan_group: "{{vlan_group|default([]) + [item['name']] }}"
+      with_items: "{{ vlan_group_response['json']['items'] }}"
+
+- name: Process and Send Report
+  gather_facts: false
+  vars_files: playbooks/vault/secrets.yaml
+  hosts: all
+  tasks:
+    - name: Write Report
+      ansible.builtin.template:
+        src: templates/vlan-group-report.csv.j2
+        dest: reports/vlan_group_report.csv
+      run_once: true
+      delegate_to: localhost
+
+    - name: Send Email
+      mail:
+        host: mapper.gslb.fedex.com
+        port: 25
+        to:
+          - Marcus Butler <marcus.butler3@fedex.com>
+        from: noreply@fedex.com
+        subject: "F5 VLAN Group Report"
+        subtype: html
+        attach:
+          - reports/vlan_group_report.csv
+        body: |-
+          Report attached
+      delegate_to: localhost
+      run_once: true
+...

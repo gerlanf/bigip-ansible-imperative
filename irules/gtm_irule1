@@ -1,0 +1,3 @@
+when DNS_REQUEST {
+      log local2. "GTM irule: A client [IP::client_addr] queried [DNS::rrname] with request type of [DNS::rrtype]"
+   }

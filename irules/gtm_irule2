@@ -1,0 +1,6 @@
+   when DNS_REQUEST {
+      log local2. "LTM irule: DNS Requests [DNS::question name] with record type of [DNS::question type] seen from [IP::client_addr]"
+   }
+   when DNS_RESPONSE {
+      log local2. "LTM irule: Client answer was provided by [DNS::origin], with the full response of [DNS::answer]"
+   }

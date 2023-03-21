@@ -1,0 +1,60 @@
+- name: Setup ConfigSync, Failover, and Mirroring Addresses for HA Pair
+  bigip_device_connectivity:
+    provider: "{{ provider }}"
+    config_sync_ip: "{{ self_ip_address }}"
+    unicast_failover:
+      - address: "{{ ansible_host }}"
+      - address: "{{ self_ip_address }}"
+    mirror_primary_address: "{{ self_ip_address }}"
+  delegate_to: localhost
+
+- name: Establish Device Trust with Subordinate Peer
+  bigip_device_trust:
+    provider: "{{ provider }}"
+    peer_server: "{{ hostvars[peer_hostname]['ansible_host'] }}"
+    peer_hostname: "{{ hostvars[peer_hostname]['inventory_hostname'] }}.{{ hostvars[peer_hostname]['domain'] }}"
+    peer_user: admin
+    peer_password: "{{ admin_password }}"
+    state: present
+    type: peer
+  delegate_to: localhost
+  when:
+    - primary is true
+
+- name: Create Device Group with AutoSync, Sync Failover, and Network Failover
+  bigip_device_group:
+    provider: "{{ provider }}"
+    name: "group-failover"
+    save_on_auto_sync: yes
+    auto_sync: yes
+    type: sync-failover
+    network_failover: yes
+  delegate_to: localhost
+  when:
+    - primary is true
+
+- name: Add Both Members to Device Group
+  bigip_device_group_member:
+    provider: "{{ provider }}"
+    device_group: "group-failover"
+    name: "{{ item }}"
+  with_items:
+    - "{{ inventory_hostname }}.{{ domain }}"
+    - "{{ hostvars[peer_hostname]['inventory_hostname'] }}.{{ hostvars[peer_hostname]['domain'] }}"
+  delegate_to: localhost
+  when:
+    - primary is true
+
+- name: Perform Initial ConfigSync
+  bigip_configsync_action:
+    provider: "{{ provider }}"
+    device_group: "group-failover"
+    sync_device_to_group: yes
+  delegate_to: localhost
+  when:
+    - primary is true
+
+- name: Wait for BIP-IP Configuration to Reload
+  bigip_wait:
+    provider: "{{ provider }}"
+    timeout: "200"

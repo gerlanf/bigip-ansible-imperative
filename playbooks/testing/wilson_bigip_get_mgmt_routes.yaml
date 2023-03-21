@@ -1,0 +1,76 @@
+- name: Fetch Data
+  gather_facts: no
+  vars_files: vault/secrets.yaml
+  connection: local
+  hosts: all
+  serial: 75
+  tasks:
+    - set_fact:
+        provider:
+          server: "{{ ansible_host }}"
+          user: "{{ service_account_user }}"
+          password: "{{ service_account_password }}"
+          timeout: 60
+          validate_certs: no
+      no_log: yes
+
+    - name: Get Authentication Token
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+        method: POST
+        body_format: json
+        body:
+          username: "{{ provider['user'] }}"
+          password: "{{ provider['password'] }}"
+          loginProviderName: tmos
+        status_code: 200
+        validate_certs: no
+      register: auth_response
+      delegate_to: localhost
+
+    - set_fact:
+        auth_token: "{{ auth_response.json.token.token }}"
+
+    - name: Get VLAN Groups
+      uri:
+        url: "https://{{ ansible_host }}/mgmt/tm/sys/management-route/?$select=name,gateway"
+        headers:
+          X-F5-Auth-Token: "{{ auth_response.json.token.token }}"
+        method: GET
+        status_code: 200
+        validate_certs: no
+        return_content: yes
+      register: mgmt_route_response
+      delegate_to: localhost
+
+    - set_fact:
+        mgmt_route: "{{mgmt_route|default([]) + [item['name']] + [item['gateway']] }}"
+      with_items: "{{ mgmt_route_response['json']['items'] }}"
+
+- name: Process and Send Report
+  gather_facts: no
+  vars_files: vault/secrets.yaml
+  hosts: all
+  tasks:
+    - name: Write Report
+      ansible.builtin.template:
+        src: templates/mgmt_route_report.csv.j2
+        dest: reports/mgmt_route_report.csv
+      run_once: true
+      delegate_to: localhost
+
+    # - name: Send Email
+    #   mail:
+    #     host: mapper.gslb.fedex.com
+    #     port: 25
+    #     to:
+    #       - Wilson Stuart <wilson.stuart@fedex.com>
+    #     from: noreply@fedex.com
+    #     subject: "F5 Management-route Report"
+    #     subtype: html
+    #     attach:
+    #       - reports/mgmt_route_report.csv
+    #     body: |-
+    #       Report attached
+    #   delegate_to: localhost
+    #   run_once: true

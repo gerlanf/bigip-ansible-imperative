@@ -1,0 +1,47 @@
+- name: Get Authentication Token
+  uri:
+    url: "https://{{ ansible_host }}/mgmt/shared/authn/login"
+    method: POST
+    body_format: json
+    body:
+      username: "{{ provider['user'] }}"
+      password: "{{ provider['password'] }}"
+      loginProviderName: tmos
+    status_code: 200
+    validate_certs: false
+  register: auth_response
+  delegate_to: localhost
+
+- set_fact:
+    auth_token: "{{ auth_response.json.token.token }}"
+
+- name: Get Current State of GUI Audit
+  uri:
+    url: "https://{{ ansible_host }}/mgmt/tm/sys/global-settings/"
+    headers:
+      X-F5-Auth-Token: "{{ auth_token }}"
+    method: GET
+    status_code: 200
+    validate_certs: false
+    return_content: yes
+  register: gui_audit_state
+  delegate_to: localhost
+
+- debug:
+    msg: "GUI Audit is already enabled"
+  when: gui_audit_state['json']['guiAudit'] == 'enabled'
+
+- name: Enable GUI Audit
+  uri:
+    url: "https://{{ ansible_host }}/mgmt/tm/sys/global-settings/"
+    headers:
+      X-F5-Auth-Token: "{{ auth_token }}"
+    body_format: json
+    method: PATCH
+    body:
+      guiAudit: "enabled"
+    status_code: 200
+    validate_certs: false
+    return_content: yes
+  delegate_to: localhost
+  when: gui_audit_state['json']['guiAudit'] == 'disabled'

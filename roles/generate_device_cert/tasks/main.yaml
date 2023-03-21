@@ -1,0 +1,20 @@
+- name: Generate a New Default Certificate
+  bigip_device_certificate:
+    days_valid: 3650
+    key_size: 4096
+    new_cert: yes
+    force: yes
+    issuer:
+      organization: FedEx
+      division: Network Engineering
+      country: US
+      state: TN
+      locality: Collierville
+      common_name: "{{ inventory_hostname }}.{{ domain }}"
+    provider:
+      server: "{{ ansible_host }}"
+      user: root
+      password: "{{ root_password }}"
+      transport: cli
+      server_port: 22
+  delegate_to: localhost
